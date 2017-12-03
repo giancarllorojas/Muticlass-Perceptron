@@ -14,11 +14,13 @@ def sinal(valor):
 
 # Faz uma previsao usando os pesos
 def preve(entrada, pesos):
-    valor = 0
+    prev_val = np.dot(pesos, np.append(entrada, 1))
+    prev_class = np.argmax(prev_val)
 
-    for i in range(len(entrada)):
-        valor += pesos[i] * entrada[i]
-    return sinal(valor)
+    print(prev_class)
+
+    return prev_class
+
 
 def plot_pesos(pesos, figure, color):
     plt.figure(figure)
@@ -31,23 +33,23 @@ def plot_pesos(pesos, figure, color):
 # Treina o dataset de entrada
 def treina(data):
     # pesos iniciais como 0.0
-    pesos = np.zeros(len(data[0][0]))
+    pesos = np.zeros((3,3))
+    print(pesos)
 
     for entrada in data:
         val = entrada[0]
         res = entrada[1]
         previsao = preve(val, pesos)
         if(previsao != res):
-
-            pesos = atualiza_pesos(pesos, val, res)
+            pesos = atualiza_pesos(pesos, val, previsao, res)
     return pesos
 
-def atualiza_pesos(pesos, entrada, resultado):
+def atualiza_pesos(pesos, entrada, previsto, resultado):
     #print(pesos, entrada)
-    for i in range(len(entrada)):
-        #print(pesos)
-        pesos[i] = pesos[i] + resultado*entrada[i]
-        #print(pesos)
+    peso_class = pesos[previsto]
+
+    pesos[resultado] += np.append(entrada, 1)
+    pesos[previsto] -= np.append(entrada, 1)
 
     return pesos
 
@@ -61,7 +63,7 @@ def formata_dados(linha):
     #print(arg1, arg2)
 
     if d[4] == 'Iris-setosa':
-        d[4] = -1
+        d[4] = 0
         plt.figure(1)
         plt.plot([1,2,3,4], d[:-1], 'r')
         plt.figure(2)
@@ -73,7 +75,7 @@ def formata_dados(linha):
         plt.figure(2)
         plt.plot(arg1, arg2, 'go')
     elif d[4] == 'Iris-virginica':
-        d[4] = 1
+        d[4] = 2
         plt.figure(1)
         plt.plot([1,2,3,4], d[:-1], 'b')
         plt.figure(2)
@@ -108,7 +110,7 @@ with open("IrisDataset.txt", "r") as i:
     print(pesos[0], pesos[1])
     #plt.plot(np.linspace(pesos[0],pesos[1]), "y")
     print(pesos)
-    plot_pesos(pesos, 2, 'y')
+    #plot_pesos(pesos, 2, 'y')
     
 
 plt.show()
