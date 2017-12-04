@@ -1,0 +1,10 @@
+male associate 11   masters 31 23300
+male assistant  4 doctorate  5 16700
+female associate  6   masters 29 22450
+female assistant  3 doctorate  3 17250
+female      full  7 doctorate 27 26775
+male      full 13 doctorate 20 31114
+male assistant  3   masters 11 18000
+female assistant  1 doctorate  1 16686
+male assistant  4 doctorate  4 17095
+male      full 10 doctorate 23 28200

@@ -2,8 +2,18 @@ import matplotlib.pyplot as plt
 from random import shuffle
 from random import seed
 import numpy as np
+import sys
+
+if len(sys.argv) < 4:
+    print("Execute python3 iris.py loops_de_treino semente_randomiza plotar_sim_ou_nao")
+    sys.exit()
+
+num_treino = int(sys.argv[1])
+semente    = int(sys.argv[2])
+plotar     = int(sys.argv[3])
 
 # retorna o sinal de um numero, usado para agrupar os tipos de iris
+# Usei essa função só no inicio, depois adaptei para usar o argmax para classificao nao-binaria
 def sinal(valor):
     if valor < 0:
         return -1
@@ -14,42 +24,57 @@ def sinal(valor):
 
 # Faz uma previsao usando os pesos
 def preve(entrada, pesos):
-    prev_val = np.dot(pesos, np.append(entrada, 1))
-    prev_class = np.argmax(prev_val)
+    #multiplica a entrada pelos pesos do modelo
+    #print("######")
+    #print(entrada)
+    #print(pesos)
+    prev_val = np.dot(pesos, entrada)
+    #print("####")
 
-    print(prev_class)
+    #print(prev_val)
 
-    return prev_class
+    # retorna o maior valor encontrado como resultado da classificação
+    return np.argmax(prev_val)
 
-
-def plot_pesos(pesos, figure, color):
+def plot_pesos(pesos, figure):
     plt.figure(figure)
     ww = pesos
     ww1 = [ww[1],-ww[0]]
     ww2 = [-ww[1],ww[0]]
-    plt.plot([ww1[0], ww2[0]],[ww1[1], ww2[1]],color)
+    plt.plot([ww1[0], ww2[0]],[ww1[1], ww2[1]])
 
+def classes(numero):
+    if numero == 0:
+        return 'Iris-setosa'
+    if numero == 1:
+        return 'Iris-versicolor'
+    if numero == 2:
+        return 'Iris-virginica'
 
 # Treina o dataset de entrada
-def treina(data):
+def treina(data, quantidade):
     # pesos iniciais como 0.0
-    pesos = np.zeros((3,3))
-    print(pesos)
+    pesos = np.zeros((3,4))
 
-    for entrada in data:
-        val = entrada[0]
-        res = entrada[1]
-        previsao = preve(val, pesos)
-        if(previsao != res):
-            pesos = atualiza_pesos(pesos, val, previsao, res)
+    for i in range(quantidade):
+        erro_total = 0
+        for entrada in data:
+            val = entrada[0]
+            res = entrada[1]
+            
+            previsao = preve(val, pesos)
+            if(previsao != res):
+                pesos = atualiza_pesos(pesos, val, previsao, res)
+                erro_total += 1
+        print("Loop de treino: " + str(i) + " - Erro: " + str(erro_total))
     return pesos
 
 def atualiza_pesos(pesos, entrada, previsto, resultado):
     #print(pesos, entrada)
     peso_class = pesos[previsto]
 
-    pesos[resultado] += np.append(entrada, 1)
-    pesos[previsto] -= np.append(entrada, 1)
+    pesos[resultado] += entrada
+    pesos[previsto] -= entrada
 
     return pesos
 
@@ -57,8 +82,10 @@ def formata_dados(linha):
     d = linha.strip().split(',')
 
     valores = [float(i) for i in d[:-1]]
-    arg1 = valores[0] + valores[1]
-    arg2 = valores[2] + valores[3]
+    arg1 = valores[0] + valores[1]**2
+    arg2 = valores[2] + valores[3]**3
+    valores[1] = valores[1]**2
+    valores[3] = valores[3]**3
 
     #print(arg1, arg2)
 
@@ -81,47 +108,43 @@ def formata_dados(linha):
         plt.figure(2)
         plt.plot(arg1, arg2, 'bo')
 
-    dados = np.array([np.array([arg1, arg2]), d[4]])
+    dados = np.array([np.array(valores), d[4]])
     #print(dados)
     return dados
 
 
 iris_dados = []
-with open("IrisDataset.txt", "r") as i:
+with open("IrisTreino.txt", "r") as i:
     linha_atual = 0
     
     # use as primeiras 130 linhas para treinar os pesos
     for linha in i:
         dados_linha = formata_dados(linha)
         iris_dados.append(dados_linha)
-
-        '''
-        # pare caso chegue na linha 130
-        linha_atual += 1
-        if(linha_atual >= 130):
-            break
-        '''
     
-    # Tive que randomizar o dataset senão ele não treinava direito
-    seed(1000)
+    # Randomizando o dataset para pegar uma quantidade equivalente de dados de cada
+    seed(semente)
     shuffle(iris_dados)
-    pesos = treina(iris_dados)
+    pesos = treina(iris_dados, num_treino)
     plt.figure(2)
-    print(pesos[0], pesos[1])
-    #plt.plot(np.linspace(pesos[0],pesos[1]), "y")
-    print(pesos)
-    #plot_pesos(pesos, 2, 'y')
     
 
-plt.show()
+if plotar == 1:
+    plt.show()
 
-
-with open("IrisDataset.txt", "r") as i:
+with open("IrisValidacao.txt", "r") as i:
     # faz a predição
+    corretos = 0
+    errados  = 0
     for linha in i:
         dados_linha = formata_dados(linha)
         valores   = dados_linha[0]
         resultado = dados_linha[1]
 
         previsao = preve(valores, pesos)
-        print("Correto: " + str(resultado) + " - Previsto: " + str(previsao))
+        if previsao == resultado:
+            corretos += 1
+        else:
+            errados += 1
+            print("Erro: ", linha, "Previsto: ", classes(previsao), "Correto: ", classes(resultado))
+    print("Analisados " + str(corretos + errados) + " entradas com taxa de acerto de " + str((corretos/(corretos+errados))*100) + "%")
